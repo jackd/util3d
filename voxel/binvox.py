@@ -1,160 +1,183 @@
 import numpy as np
-import _binvox_rw as binvox_rw
+import rle
+
+
+def read_header(fp):
+    """
+    Read binvox header.
+
+    Mostly meant for internal use.
+    """
+    line = fp.readline().strip()
+    if not line.startswith(b'#binvox'):
+        raise IOError('Not a binvox file')
+    dims = tuple(int(s) for s in fp.readline().strip().split(b' ')[1:])
+    translate = tuple(float(s) for s in fp.readline().strip().split(b' ')[1:])
+    scale = float(fp.readline().strip().split(b' ')[1])
+    fp.readline()
+    return dims, translate, scale
 
 
 class Voxels(object):
-    def __init__(self, translate=[0, 0, 0], scale=1, axis_order='xzy'):
-        self.translate = translate
+    def __init__(self, dims, translate=(0, 0, 0), scale=1):
+        if isinstance(dims, int):
+            self._dims = (dims,) * 3
+        elif len(dims) != 3:
+            raise ValueError('dims must have 3 elements.')
+        else:
+            self._dims = tuple(dims)
+        self.translate = np.array(translate)
         self.scale = scale
-        self.axis_order = axis_order
-
-    def _kwargs(self):
-        return dict(
-            translate=self.translate,
-            scale=self.scale,
-            axis_order=self.axis_oder)
-
-    @property
-    def dims(self):
-        raise NotImplementedError('Abstract property')
-
-    def dense_data(self):
-        raise NotImplementedError('Abstract method')
-
-    def sparse_data(self):
-        raise NotImplementedError('Abstract method')
-
-    def to_dense(self):
-        return DenseVoxels(self.dense_data(), **self._kwargs())
-
-    def to_sparse(self):
-        return SparseVoxels(self.sparse_data(), self.dims, **self._kwargs())
 
     @staticmethod
-    def dense(dense_array, *args, **kwargs):
-        return DenseVoxels(dense_array, *args, **kwargs)
+    def from_file(fp):
+        dims, translate, scale = read_header(fp)
+        rle_data = np.frombuffer(fp.read(), dtype=np.uint8)
+        return RleVoxels(rle_data, dims, translate, scale)
 
-    @staticmethod
-    def sparse(sparse_array, dims, *args, **kwargs):
-        return SparseVoxels(sparse_array, dims, *args, **kwargs)
+    def save(self, path):
+        with open(path, 'w') as fp:
+            self.save_to_file(fp)
 
-    def write_to_file(self, fp):
-        if self.axis_order not in ('xzy', 'xyz'):
-            raise ValueError('Unsupported voxel model axis order')
-        dense_data = self.dense_data()
-
-        if self.axis_order == 'xyz':
-            dense_data = np.transpose(dense_data, (0, 2, 1))
-        flat_data = dense_data.flatten()
-        _write_voxel_data(
-            fp, flat_data, self.dims, translate=self.translate,
-            scale=self.scale)
-
-    def write(self, path_or_file):
-        if isinstance(path_or_file, (str, unicode)):
-            with open(path_or_file, 'w') as fp:
-                self.write_to_file(fp)
-
-
-class SparseVoxels(Voxels):
-    def __init__(self, sparse_data, dims, *args, **kwargs):
-        if len(sparse_data.shape) != 2:
-            raise ValueError(
-                'sparse_data must be a 2d array, got shape %s' %
-                str(sparse_data.shape))
-        if sparse_data.shape[1] != 3:
-            raise ValueError(
-                'sparse_data.shape[1] must be 3, got %s'
-                % str(sparse_data.shape))
-        self._sparse_data = sparse_data
-        self._dims = dims
-        super(SparseVoxels, self).__init__(*args, **kwargs)
+    def save_to_file(self, fp):
+        dims = self.dims
+        translate = self.translate
+        scale = self.scale
+        fp.write('#binvox 1\n')
+        fp.write('dim ' + ' '.join(map(str, dims)) + '\n')
+        fp.write('translate ' + ' '.join(map(str, translate)) + '\n')
+        fp.write('scale ' + str(scale) + '\n')
+        fp.write('data\n')
+        fp.write((chr(d) for d in self.rle_data()))
 
     @property
     def dims(self):
         return self._dims
 
-    def dense_data(self):
-        return binvox_rw.sparse_to_dense(self._sparse_data, self.dims)
+    def to_dense(self):
+        return DenseVoxels(
+            self.dense_data(), self.dims, self.translate, self.scale)
 
-    def sparse_data(self):
-        return self._sparse_data
-
-    @staticmethod
-    def from_file(fp, fix_coords=False):
-        base = binvox_rw.read_as_coord_array(fp, fix_coords=fix_coords)
+    def to_sparse(self):
         return SparseVoxels(
-            base.data, base.dims, base.translate, base.scale, base.axis_order)
+            self.sparse_data(), self.dims, self.translate, self.scale)
 
-    @staticmethod
-    def from_path(path, fix_coords=False):
-        with open(path, 'r') as fp:
-            return SparseVoxels.from_file(fp, fix_coords)
+    def to_rle(self):
+        return RleVoxels(self.rle_data())
+
+    def rle_data(self):
+        raise NotImplementedError('Abstract method')
+
+    def dense_data(self, fix_coords=False):
+        raise NotImplementedError('Abstract method')
+
+    def sparse_data(self, fix_coords=False):
+        raise NotImplementedError('Abstract method')
+
+    def gather(self, indices, fix_coords=False):
+        raise NotImplementedError('Abstract method')
+
+
+class RleVoxels(Voxels):
+    def __init__(self, rle_data, dims, translate=(0, 0, 0), scale=1):
+        self._rle_data = rle_data
+        super(RleVoxels, self).__init__(dims, translate, scale)
+
+    def rle_data(self):
+        return self._rle_data
+
+    def dense_data(self, fix_coords=False):
+        rle_data = self._rle_data
+        data = rle.rle_to_dense(rle_data)
+        assert(data.dtype == np.bool)
+        data = data.reshape(self.dims)
+        if fix_coords:
+            data = np.transpose(data, (0, 2, 1))
+        return data
+
+    def sparse_data(self, fix_coords=False):
+        indices = rle.rle_to_sparse(self._rle_data)
+        dims = self.dims
+        d2 = dims[2]
+        d1 = dims[1]*d2
+        i = indices // d1
+        kj = indices % d1
+        k = kj // d2
+        j = kj % d2
+        if fix_coords:
+            return i, k, j
+        else:
+            return i, j, k
+
+    def gather(self, indices, fix_coords=False):
+        if fix_coords:
+            x, y, z = indices
+            indices = x, z, y
+        indices = np.ravel_multi_index(indices, self.dims)
+        order = np.argsort(indices)
+        ordered_indices = indices[order]
+        ans = np.empty(len(order), dtype=np.bool)
+        ans[order] = tuple(self._sorted_gather(ordered_indices))
+        return ans
+
+    def _sorted_gather(self, ordered_indices):
+        return rle.sorted_gather_1d(self._rle_data, ordered_indices)
 
 
 class DenseVoxels(Voxels):
-    def __init__(self, dense_data, *args, **kwargs):
-        if len(dense_data.shape) != 3:
-            raise ValueError(
-                'dense_data must be a 3d array, got shape %s' %
-                str(dense_data.shape))
+    def __init__(self, dense_data, translate=(0, 0, 0), scale=1):
         self._dense_data = dense_data
-        super(DenseVoxels, self).__init__(*args, **kwargs)
+        super(DenseVoxels, self).__init__(dense_data.shape, translate, scale)
 
-    @property
-    def dims(self):
-        return self._dense_data.shape
+    def rle_data(self):
+        return rle.dense_to_rle(self._dense_data)
 
-    def dense_data(self):
+    def dense_data(self, fix_coords=False):
         return self._dense_data
 
-    def sparse_data(self):
-        return binvox_rw.dense_to_sparse(self._dense_data)
-
-    @staticmethod
-    def from_file(fp, fix_coords=False):
-        base = binvox_rw.read_as_3d_array(fp, fix_coords=fix_coords)
-        return DenseVoxels(
-            base.data, base.translate, base.scale, base.axis_order)
-
-    @staticmethod
-    def from_path(path, fix_coords=False):
-        with open(path, 'r') as fp:
-            return DenseVoxels.from_file(fp, fix_coords)
-
-
-def _write_voxel_data(fp, flat_data, dims, translate=[0, 0, 0], scale=1):
-    """
-    Write voxel data to file.
-
-    flat_data must be flattened and in xzy order.
-
-    Refactoring of on binvox_rw.write_voxel_data
-    """
-    fp.write('#binvox 1\n')
-    fp.write('dim ' + ' '.join(map(str, dims)) + '\n')
-    fp.write('translate ' + ' '.join(map(str, translate)) + '\n')
-    fp.write('scale ' + str(scale) + '\n')
-    fp.write('data\n')
-
-    # keep a sort of state machine for writing run length encoding
-    state = flat_data[0]
-    ctr = 0
-    for c in flat_data:
-        if c == state:
-            ctr += 1
-            # if ctr hits max, dump
-            if ctr == 255:
-                fp.write(chr(state))
-                fp.write(chr(ctr))
-                ctr = 0
+    def sparse_data(self, fix_coords=False):
+        i, k, j = np.where(self._dense_data)
+        if fix_coords:
+            return i, j, k
         else:
-            # if switch state, dump
-            fp.write(chr(state))
-            fp.write(chr(ctr))
-            state = c
-            ctr = 1
-    # flush out remainders
-    if ctr > 0:
-        fp.write(chr(state))
-        fp.write(chr(ctr))
+            return i, k, j
+
+    def gather(self, indices, fix_coords=False):
+        if fix_coords:
+            i, j, k = indices
+        else:
+            i, k, j = indices
+        return self._dense_data[i, k, j]
+
+
+class SparseVoxels(Voxels):
+    def __init__(self, sparse_data, dims, translate=(0, 0, 0), scale=1):
+        self._sparse_data = sparse_data
+        super(SparseVoxels, self).__init__(dims, translate, scale)
+
+    def rle_data(self):
+        i, k, j = self._sparse_data
+        indices = np.ravel_multi_index((i, k, j), self.dims)
+        return rle.sparse_to_rle(indices, np.prod(self.dims))
+
+    def dense_data(self, fix_coords=False):
+        data = np.zeros(self.dims, dtype=np.bool)
+        if fix_coords:
+            i, k, j = self._sparse_data
+        else:
+            i, j, k = self._sparse_data
+        data[i, k, j] = 1
+        return data
+
+    def sparse_data(self, fix_coords=False):
+        return self._sparse_data
+
+    def gather(self, indices, fix_coords=False):
+        if fix_coords:
+            i, j, k = indices
+        else:
+            i, k, j = indices
+        dims = self.dims
+        indices_1d = np.ravel_multi_index((i, k, j), dims)
+        sparse_1d = set(np.ravel_multi_index(self._sparse_data, dims))
+        return np.array([i1d in sparse_1d for i1d in indices_1d], np.bool)

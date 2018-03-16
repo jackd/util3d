@@ -1,19 +1,14 @@
 import os
-import binvox
+import binvox as bv
 import dids
 import dids.auto_save as auto_save
 
 
 class BinvoxDataset(dids.Dataset):
-    def __init__(self, root_dir, dense=True, fix_coords=False, mode='r'):
+    def __init__(self, root_dir, mode='r'):
         self._root_dir = root_dir
-        self._fix_coords = fix_coords
         self._mode = mode
         self._keys = None
-        if dense:
-            self._loader = binvox.DenseVoxels.from_file
-        else:
-            self._loader = binvox.SparseVoxels.from_file
 
     @property
     def root_dir(self):
@@ -24,7 +19,7 @@ class BinvoxDataset(dids.Dataset):
 
     def __getitem__(self, key):
         with open(self.path(key), 'r') as fp:
-            return self._loader(fp, fix_coords=self._fix_coords)
+            return bv.Voxels.from_file(fp)
 
     def is_writable(self):
         return self._mode in ('a', 'w')
@@ -32,7 +27,7 @@ class BinvoxDataset(dids.Dataset):
     def __setitem__(self, key, value):
         if self.is_writable():
             with open(self.path(key), 'w') as fp:
-                value.write_to_file(fp)
+                value.save_to_file(fp)
         else:
             raise RuntimeError('Dataset not writable')
 
