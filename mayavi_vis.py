@@ -21,23 +21,35 @@ def vis_point_cloud(points, axis_order='xyz', value=None, **kwargs):
     mlab.points3d(*data, **kwargs)
 
 
+_colors = (
+    (0, 0, 0),
+    (0, 0, 1),
+    (0, 1, 0),
+    (0, 1, 1),
+    (1, 0, 0),
+    (1, 0, 1),
+    (1, 1, 0),
+    (1, 1, 1),
+)
+
+
 def vis_segmented_cloud(points, idxs, colors=None, **kwargs):
     if colors is None:
-        colors = (
-            (0, 0, 0),
-            (0, 0, 1),
-            (0, 1, 0),
-            (0, 1, 1),
-            (1, 0, 0),
-            (1, 0, 1),
-            (1, 1, 0),
-            (1, 1, 1),
-        )
+        colors = _colors
     n_means = np.max(idxs)+1
     clouds = [points[idxs == i] for i in range(n_means)]
     for i in range(n_means):
         cloud = clouds[i]
         color = colors[i % len(colors)]
+        vis_point_cloud(cloud, color=color, **kwargs)
+
+
+def vis_multi_clouds(clouds, colors=None, **kwargs):
+    if colors is None:
+        colors = _colors
+    nc = len(colors)
+    for i, cloud in enumerate(clouds):
+        color = colors[i % nc]
         vis_point_cloud(cloud, color=color, **kwargs)
 
 
