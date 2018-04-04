@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 from scipy.ndimage import zoom
 from scipy.ndimage.filters import convolve
@@ -214,3 +215,29 @@ def filled_voxels(voxels):
     the voxels themselves.
     """
     return np.logical_not(outer_voxels(voxels))
+
+
+def get_sign_change_indices_1d(data):
+    return get_value_change_indices_1d(np.sign(data))
+
+
+def get_value_change_indices_1d(data):
+    return np.where(data[:-1] != data[1:])[0]
+
+
+def get_root_frac_1d(data, lower_indices):
+    lv = data[lower_indices]
+    uv = data[lower_indices + 1]
+    frac = lv / (lv - uv)
+    return frac
+
+
+def get_interpolated_roots_1d(data):
+    lower = get_sign_change_indices_1d(data)
+    frac = get_root_frac_1d(data, lower)
+    return lower, frac
+
+
+def get_interpolated_roots_2d(data):
+    for di in data:
+        yield get_interpolated_roots_1d(di)
