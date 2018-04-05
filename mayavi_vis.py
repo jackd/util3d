@@ -75,3 +75,21 @@ def vis_mesh(
     if include_wireframe:
         mlab.triangular_mesh(
             x, y, z, faces, color=(0, 0, 0), representation='wireframe')
+
+
+def vis_colored_point_cloud(points, colors, **kwargs):
+    if colors.shape[-1] != 4:
+        raise ValueError('colors must be an (n, 4) array of rgba values')
+    n = len(points)
+    if len(colors) != n:
+        raise ValueError('colors must be the same length as points')
+    scalars = np.arange(n)
+    ones = np.ones((n,))
+    x, y, z = points.T
+
+    pts = mlab.quiver3d(
+        x, y, z, ones, ones, ones, scalars=scalars, mode='sphere',
+        **kwargs)
+    pts.glyph.color_mode = 'color_by_scalar'  # Color by scalar
+    pts.module_manager.scalar_lut_manager.lut.table = colors
+    mlab.draw()
