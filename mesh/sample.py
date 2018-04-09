@@ -11,6 +11,8 @@ def sample_triangle(v, n, dtype=np.float32):
 
 
 def sample_faces(vertices, faces, n_total):
+    if len(faces) == 0:
+        raise ValueError('Cannot sample points from zero faces.')
     tris = vertices[faces]
     n_faces = len(faces)
     d0 = tris[..., 0:1, :]
