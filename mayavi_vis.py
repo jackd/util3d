@@ -21,6 +21,12 @@ def vis_point_cloud(points, axis_order='xyz', value=None, **kwargs):
     mlab.points3d(*data, **kwargs)
 
 
+def vis_normals(positions, normals, axis_order='xyz', **kwargs):
+    x, y, z = positions.T
+    u, v, w = normals.T
+    mlab.quiver3d(x, y, z, u, v, w, **kwargs)
+
+
 _colors = (
     (0, 0, 0),
     (0, 0, 1),
