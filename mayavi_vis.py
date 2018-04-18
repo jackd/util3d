@@ -22,8 +22,8 @@ def vis_point_cloud(points, axis_order='xyz', value=None, **kwargs):
 
 
 def vis_normals(positions, normals, axis_order='xyz', **kwargs):
-    x, y, z = positions.T
-    u, v, w = normals.T
+    x, y, z = permute_xyz(*positions.T, order=axis_order)
+    u, v, w = permute_xyz(*normals.T, order=axis_order)
     mlab.quiver3d(x, y, z, u, v, w, **kwargs)
 
 

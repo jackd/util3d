@@ -27,3 +27,24 @@ def triangulated_faces(faces):
     for face in faces:
         for i in range(len(face) - 2):
             yield (face[0], face[i+1], face[i+2])
+
+
+def combine_meshes(meshes):
+    """
+    Combine the iterable of (vertices, faces) into a single (vertices, faces).
+
+    Args:
+        meshes: iterable of (vertices, faces)
+
+    Returns:
+        vertices: (nv, 3) float numpy array of vertex coordinates
+        faces: (nf, 3) int numpy array of face vertex indices.
+    """
+    vertices = []
+    faces = []
+    nv = 0
+    for v, f in meshes:
+        vertices.append(v)
+        faces.append(f + nv)
+        nv += len(v)
+    return np.concat(vertices, axis=0), np.concat(faces, axis=0)

@@ -54,9 +54,9 @@ def sample_faces_with_normals(vertices, faces, n_total):
         assert(ds.shape[1:] == (2, 3))
         normals = np.cross(ds[:, 0], ds[:, 1])
         norm = np.sqrt(np.sum(normals**2, axis=-1, keepdims=True))
-        areas = np.squeeze(norm, axis=-1)
-        total_area = np.sum(areas)*(1 + 1e-4)
-        areas /= total_area
+        areas = np.squeeze(norm, axis=-1).copy()
+        total_area = np.sum(areas)
+        areas /= total_area * (1 + 1e-3)
         norm_eps = 1e-8
         norm[norm < norm_eps] = norm_eps
         normals /= norm
