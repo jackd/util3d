@@ -68,21 +68,20 @@ class OffObject(object):
             return OffObject(vertices, faces)
 
     def _to_file(self, fp):
-        import string
         fp.write('OFF\n')
         fp.write('%d %d %d\n' % (self.n_vertices, self.n_faces, self.n_edges))
         fp.writelines(
-            '%s\n' % string.join(str(vi) for vi in v) for v in self.vertices)
+            '%s\n' % ' '.join(str(vi) for vi in v) for v in self.vertices)
         fp.writelines(
-            '%d %s' % (len(f), string.join(str(fi) for fi in f))
+            '%d %s' % (len(f), ' '.join(str(fi) for fi in f))
             for f in self.faces)
 
     def to_file(self, path_or_file):
-        if isinstance(path_or_file, (str, unicode)):
+        if hasattr(path_or_file, 'write'):
+            self._to_file(path_or_file)
+        else:
             with open(path_or_file, 'w') as fp:
                 self._to_file(fp)
-        else:
-            self._to_file(path_or_file)
 
     @staticmethod
     def from_path(path):

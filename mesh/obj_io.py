@@ -1,4 +1,3 @@
-import string
 import numpy as np
 
 
@@ -95,17 +94,14 @@ def parse_obj(file_or_filename):
 
 def write_obj_file(fp, vertices, faces):
     for vertex in vertices:
-        fp.write('v %s\n' % string.join((str(v) for v in vertex)))
+        fp.write('v %s\n' % ' '.join((str(v) for v in vertex)))
     for face in faces:
-        fp.write('f %s\n' % string.join((str(f+1) for f in face)))
+        fp.write('f %s\n' % ' '.join((str(f+1) for f in face)))
 
 
 def write_obj(path_or_fp, vertices, faces):
-    if isinstance(path_or_fp, (str, unicode)):
-        with open(path_or_fp, 'w') as fp:
-            write_obj_file(fp, vertices, faces)
-    elif hasattr(path_or_fp, 'write'):
+    if hasattr(path_or_fp, 'write'):
         write_obj_file(path_or_fp, vertices, faces)
     else:
-        raise TypeError(
-            '`path_or_fp` must be a str/unicode or have a `write` attr')
+        with open(path_or_fp, 'w') as fp:
+            write_obj_file(fp, vertices, faces)

@@ -1,19 +1,31 @@
 import numpy as np
 
 
+def guarded_norm(x, axis=-1, eps=1e-8, keepdims=False):
+    norms = np.sqrt(np.sum(x**2, axis=axis, keepdims=keepdims))
+    norms[norms < eps] = eps
+    return norms
+
+
+def guarded_normalized(x, axis=-1, eps=1e-8):
+    return x / guarded_norm(x, keepdims=True, axis=axis, eps=eps)
+
+
+def guarded_normalize(x, axis=-1, eps=1e-8):
+    x /= guarded_norm(x, keepdims=True, axis=axis, eps=eps)
+
+
 def get_centroids(vertices, faces):
     return np.mean(vertices[faces], axis=-2)
 
 
-def get_normals(vertices, faces, normalize=True):
+def get_normals(vertices, faces, normalize=True, guard_eps=1e-8):
     ps = vertices[faces]
     p0 = ps[..., 1, :] - ps[..., 0, :]
     p1 = ps[..., 2, :] - ps[..., 0, :]
     normals = np.cross(p0, p1)
     if normalize:
-        norms = np.sqrt(np.sum(normals**2, axis=-1, keepdims=True))
-        norms[norms == 0] = 1e-8
-        normals /= norms
+        guarded_normalize(normals, eps=guard_eps)
     return normals
 
 
