@@ -39,12 +39,11 @@ class OffObject(object):
 
     @staticmethod
     def from_file(fp):
-        line_iter = iter(fp.readlines())
+        line_iter = iter(
+            (line for line in fp.readlines() if line != '\n' and
+                not line.startswith('#')))
         try:
             line = next(line_iter)
-            while line.startswith('#'):
-                line = next(line_iter)
-                continue
             if line[:3] != 'OFF':
                 raise IOError('Invalid .off file: must start with OFF')
             line = line[3:]
