@@ -2,6 +2,8 @@ import numpy as np
 
 
 def sample_triangle(v, n=None):
+    if hasattr(n, 'dtype'):
+        n = np.asscalar(n)
     if n is None:
         size = v.shape[:-2] + (2,)
     elif isinstance(n, int):
