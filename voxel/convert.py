@@ -172,5 +172,6 @@ def mesh_to_voxels(vertices, faces, voxel_dim, *args, **kwargs):
     with TempPath(extension='.binvox') as binvox_path:
         mesh_to_binvox(
             vertices, faces, binvox_path, voxel_dim, *args, **kwargs)
-        voxels = DenseVoxels.from_file(binvox_path)
+        with open(binvox_path, 'rb') as fp:
+            voxels = DenseVoxels.from_file(fp)
     return voxels

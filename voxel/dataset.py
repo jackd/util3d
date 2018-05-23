@@ -18,6 +18,8 @@ class BinvoxDataset(dids.Dataset):
         return os.path.join(self._root_dir, '%s.binvox' % key)
 
     def __getitem__(self, key):
+        print(self.path(key))
+        exit()
         with open(self.path(key), 'r') as fp:
             return bv.Voxels.from_file(fp)
 

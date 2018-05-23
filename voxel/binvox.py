@@ -49,7 +49,8 @@ class Voxels(object):
         fp.write('translate ' + ' '.join(map(str, translate)) + '\n')
         fp.write('scale ' + str(scale) + '\n')
         fp.write('data\n')
-        fp.write((chr(d) for d in self.rle_data()))
+        # fp.write((chr(d) for d in self.rle_data()))
+        fp.write(self.rle_data().tostring())
 
     @property
     def dims(self):
