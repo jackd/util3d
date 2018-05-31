@@ -92,7 +92,14 @@ def parse_obj(file_or_filename):
             return parse_obj_file(f)
 
 
+def _assert_valid_mesh(vertices, faces):
+    if np.max(faces) >= len(vertices):
+        raise ValueError(
+            'max face value must be less than number of vertices.')
+
+
 def write_obj_file(fp, vertices, faces):
+    _assert_valid_mesh(vertices, faces)
     for vertex in vertices:
         fp.write('v %s\n' % ' '.join((str(v) for v in vertex)))
     for face in faces:
