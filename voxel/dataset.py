@@ -8,14 +8,19 @@ class BinvoxDataset(dids.Dataset):
     def __init__(self, root_dir, mode='r'):
         self._root_dir = root_dir
         self._mode = mode
-        self._keys = None
 
     @property
     def root_dir(self):
         return self._root_dir
 
     def path(self, key):
-        return os.path.join(self._root_dir, '%s.binvox' % key)
+        if not isinstance(key, (str, unicode)):
+            raise KeyError('key should be string/unicode, got %s' % str(key))
+        path = os.path.join(self._root_dir, '%s.binvox' % key)
+        folder = os.path.dirname(path)
+        if not os.path.isdir(folder):
+            os.makedirs(folder)
+        return path
 
     def __getitem__(self, key):
         with open(self.path(key), 'r') as fp:
@@ -38,11 +43,14 @@ class BinvoxDataset(dids.Dataset):
             raise RuntimeError('Dataset not writable')
 
     def keys(self):
-        if self._keys is None:
-            self._keys = frozenset((
-                f[:-7] for f in os.listdir(self._root_dir) if
-                len(f) > 7 and f[-7:] == '.binvox'))
-        return self._keys
+        root_len = len(self.root_dir) + 1
+        for root, dirs, files in os.walk(self._root_dir):
+            for f in files:
+                if f[-7:] == '.binvox':
+                    yield os.path.join(root[root_len:], f[:-7])
+
+    def __len__(self):
+        return len(tuple(self.keys()))
 
     def __contains__(self, key):
         return os.path.isfile(self.path(key))
