@@ -1,6 +1,7 @@
 from __future__ import division
 import numpy as np
 import rle
+import os
 
 
 def read_header(fp):
@@ -32,9 +33,55 @@ class Voxels(object):
 
     @staticmethod
     def from_file(fp):
+        """Deprecated. Use Voxels.from_binvox instead."""
+        return Voxels.from_binvox_file(fp)
+
+    @staticmethod
+    def from_binvox_file(fp):
         dims, translate, scale = read_header(fp)
         rle_data = np.frombuffer(fp.read(), dtype=np.uint8)
         return RleVoxels(rle_data, dims, translate, scale)
+
+    @staticmethod
+    def from_binvox_path(path):
+        with open(path, 'r') as fp:
+            return Voxels.from_binvox_path(fp)
+
+    @staticmethod
+    def from_binvox(path_or_file):
+        if hasattr(path_or_file, 'read'):
+            return Voxels.from_binvox_file(path_or_file)
+        elif isinstance(path_or_file, (str, unicode)):
+            return Voxels.from_binvox_path(path_or_file)
+        else:
+            raise TypeError(
+                'path_or_file must file-like (have a `read` attribute) '
+                'or be a string/uincode.')
+
+    @staticmethod
+    def from_path(path):
+        ext = os.path.splitext(path)[1]
+        if ext == '.binvox':
+            return Voxels.from_binvox(path)
+        elif ext == '.npy':
+            return Voxels.from_numpy(path)
+        else:
+            raise NotImplementedError('Unrecognized extension "%s"' % ext)
+
+    @staticmethod
+    def from_numpy(path_or_file):
+        return DenseVoxels(np.load(path_or_file))
+
+    @staticmethod
+    def load(path_or_file):
+        if hasattr(path_or_file, 'read'):
+            return Voxels.from_file(path_or_file)
+        elif isinstance(path_or_file, (str, unicode)):
+            return Voxels.from_path(path_or_file)
+        else:
+            raise TypeError(
+                'path_or_file must file-like (have a `read` attribute) '
+                'or be a string/uincode.')
 
     def save(self, path):
         with open(path, 'w') as fp:

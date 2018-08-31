@@ -65,9 +65,14 @@ def vis_voxels(voxels, axis_order='xzy', **kwargs):
         # raise ValueError('No voxels to display')
         Warning('No voxels to display')
     else:
-        if 'mode' not in kwargs:
-            kwargs['mode'] = 'cube'
+        kwargs.setdefault('mode', 'cube')
         mlab.points3d(*data, **kwargs)
+
+
+def vis_sliced(data, axis_order='xzy', **kwargs):
+    if axis_order != 'xyz':
+        data = data.transpose(tuple(_dim[w] for w in axis_order))
+    mlab.volume_slice(data, **kwargs)
 
 
 def vis_mesh(
