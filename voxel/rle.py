@@ -70,7 +70,6 @@ def sparse_to_rle(indices, length):
                 count += 1
             else:
                 for c in _repeated(count):
-                    print(c, count)
                     yield 1
                     yield c
                 # 0 block
@@ -210,7 +209,6 @@ def sample_occupied_indices(rle_data, n_samples):
         rle_index = 0
         count = 0
         rle_iter = iter(rle_data)
-        print(ns)
         for n in ns:
             while n >= count:
                 value = next(rle_iter)
