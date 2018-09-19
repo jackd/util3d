@@ -6,9 +6,13 @@ This is the main part of the binvox file format.
 import numpy as np
 
 
-def rle_to_dense(rle_data):
+def rle_to_dense(rle_data, dtype=None):
+    if not isinstance(rle_data, np.ndarray):
+        rle_data = np.array(rle_data, dtype=np.uint8)
     values, counts = rle_data[::2], rle_data[1::2]
-    return np.repeat(values.astype(np.bool), counts)
+    if dtype is not None and values.dtype != dtype:
+        values = values.astype(dtype)
+    return np.repeat(values, counts)
 
 
 def rle_to_sparse(rle_data):
@@ -110,6 +114,32 @@ def sorted_gather_1d(raw_data, ordered_indices):
             break
 
 
+def gatherer_1d(indices):
+    if not isinstance(indices, np.ndarray):
+        indices = np.array(indices, copy=False)
+    order = np.argsort(indices)
+    ordered_indices = indices[order]
+    ans = np.empty(len(order), dtype=np.bool)
+
+    def f(data):
+        ans[order] = tuple(sorted_gather_1d(data, ordered_indices))
+        return ans.copy()
+
+    return f
+
+
+def gather_1d(rle_data, indices):
+    return gatherer_1d(indices)(rle_data)
+
+
+def reverse(rle_data):
+    if not isinstance(rle_data, np.ndarray):
+        rle_data = np.array(rle_data, copy=False)
+    rle_data = np.reshape(rle_data, (-1, 2))
+    rle_data = rle_data[-1::-1]
+    return np.reshape(rle_data, (-1,))
+
+
 def _get_contiguous_regions_1d(
         data_iter, max_index, i=0, start_val=0):
     start_index = 0
@@ -188,18 +218,6 @@ def get_contiguous_regions(rle_data, dims):
     return ret.reshape((u, v))
 
 
-def reduce_rle_sum(rle_data):
-    s = 0
-    it = iter(rle_data)
-    try:
-        while True:
-            value = next(it)
-            n = next(it)
-            s += n*value
-    except StopIteration:
-        return s
-
-
 def sample_occupied_indices(rle_data, n_samples):
     import random
     if n_samples > 0:
@@ -218,6 +236,24 @@ def sample_occupied_indices(rle_data, n_samples):
                 rle_index += c
             diff = count - n
             yield rle_index - diff
+
+
+def value_length_pairs(rle_data):
+    """Get an iterable of (value, length) pairs."""
+    it = iter(rle_data)
+    try:
+        while True:
+            yield next(it), next(it)
+    except StopIteration:
+        pass
+
+
+def length(rle_data):
+    return sum(l for v, l in value_length_pairs(rle_data))
+
+
+def reduce_rle_sum(rle_data):
+    return sum(v*l for v, l in value_length_pairs(rle_data))
 
 
 if __name__ == '__main__':

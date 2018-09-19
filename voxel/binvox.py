@@ -137,7 +137,7 @@ class RleVoxels(Voxels):
 
     def dense_data(self, fix_coords=False):
         rle_data = self._rle_data
-        data = rle.rle_to_dense(rle_data)
+        data = rle.rle_to_dense(rle_data, dtype=np.bool)
         assert(data.dtype == np.bool)
         data = data.reshape(self.dims)
         if fix_coords:
@@ -171,6 +171,14 @@ class RleVoxels(Voxels):
 
     def _sorted_gather(self, ordered_indices):
         return rle.sorted_gather_1d(self._rle_data, ordered_indices)
+
+
+def gatherer(indices, dims, fix_coords=False):
+    if fix_coords:
+        x, y, z = indices
+        indices = x, z, y
+    indices = np.ravel_multi_index(indices, dims)
+    return rle.gatherer_1d(indices)
 
 
 class DenseVoxels(Voxels):
