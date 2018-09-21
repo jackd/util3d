@@ -45,7 +45,7 @@ class Voxels(object):
     @staticmethod
     def from_binvox_path(path):
         with open(path, 'r') as fp:
-            return Voxels.from_binvox_path(fp)
+            return Voxels.from_binvox_file(fp)
 
     @staticmethod
     def from_binvox(path_or_file):
@@ -62,7 +62,7 @@ class Voxels(object):
     def from_path(path):
         ext = os.path.splitext(path)[1]
         if ext == '.binvox':
-            return Voxels.from_binvox(path)
+            return Voxels.from_binvox_path(path)
         elif ext == '.npy':
             return Voxels.from_numpy(path)
         else:
