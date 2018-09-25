@@ -154,9 +154,9 @@ class RleVoxels(Voxels):
         k = kj // d2
         j = kj % d2
         if fix_coords:
-            return i, k, j
-        else:
             return i, j, k
+        else:
+            return i, k, j
 
     def gather(self, indices, fix_coords=False):
         if fix_coords:
@@ -191,7 +191,10 @@ class DenseVoxels(Voxels):
             rle.dense_to_rle(self._dense_data.flatten())), dtype=np.uint8)
 
     def dense_data(self, fix_coords=False):
-        return self._dense_data
+        data = self._dense_data
+        if fix_coords:
+            data = np.transpose(data, (0, 2, 1))
+        return data
 
     def sparse_data(self, fix_coords=False):
         i, k, j = np.where(self._dense_data)

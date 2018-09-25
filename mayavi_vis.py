@@ -59,12 +59,19 @@ def vis_multi_clouds(clouds, colors=None, **kwargs):
         vis_point_cloud(cloud, color=color, **kwargs)
 
 
-def vis_voxels(voxels, axis_order='xzy', **kwargs):
+def vis_voxels(voxels, axis_order='xzy', scale=None, shift=None, **kwargs):
     data = permute_xyz(*np.where(voxels), order=axis_order)
     if len(data[0]) == 0:
         # raise ValueError('No voxels to display')
         Warning('No voxels to display')
     else:
+        if scale is not None or shift is not None:
+            data = np.stack(data, axis=-1)
+            if scale is not None:
+                data = [d / scale for d in data]
+            if shift is not None:
+                data = [d - shift for d in data]
+            data = np.unstack(data, axis=-1)
         kwargs.setdefault('mode', 'cube')
         mlab.points3d(*data, **kwargs)
 
@@ -104,3 +111,9 @@ def vis_colored_point_cloud(points, colors, **kwargs):
     pts.glyph.color_mode = 'color_by_scalar'  # Color by scalar
     pts.module_manager.scalar_lut_manager.lut.table = colors
     mlab.draw()
+
+
+def vis_axes(length=1):
+    mlab.quiver3d([0], [0], [0], [length], [0], [0], color=(1, 0, 0))
+    mlab.quiver3d([0], [0], [0], [0], [length], [0], color=(0, 1, 0))
+    mlab.quiver3d([0], [0], [0], [0], [0], [length], color=(0, 0, 1))
