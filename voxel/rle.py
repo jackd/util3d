@@ -119,11 +119,11 @@ def gatherer_1d(indices):
         indices = np.array(indices, copy=False)
     order = np.argsort(indices)
     ordered_indices = indices[order]
-    ans = np.empty(len(order), dtype=np.bool)
 
     def f(data):
+        ans = np.empty(len(order), dtype=np.bool)
         ans[order] = tuple(sorted_gather_1d(data, ordered_indices))
-        return ans.copy()
+        return ans
 
     return f
 
