@@ -52,6 +52,34 @@ def dense_to_rle(dense_data):
             yield count
 
 
+def dense_to_rle_fp(dense_data, fp):
+    ctr = 0
+    state = dense_data[0]
+    for c in dense_data:
+        if c == state:
+            ctr += 1
+            if ctr == 255:
+                fp.write(chr(state))
+                fp.write(chr(ctr))
+                ctr = 0
+        else:
+            fp.write(chr(state))
+            fp.write(chr(ctr))
+            state = c
+            ctr = 1
+    if ctr > 0:
+        fp.write(chr(state))
+        fp.write(chr(ctr))
+
+
+def dense_to_rle_with_buffer(dense_data):
+    import io
+    fp = io.BytesIO()
+    dense_to_rle_fp(dense_data, fp)
+    fp.seek(0)
+    return np.fromstring(fp.read(), dtype=np.uint8)
+
+
 def _repeated(count):
     while count > 255:
         yield 255
