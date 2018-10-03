@@ -95,6 +95,14 @@ def vis_mesh(
             x, y, z, faces, color=(0, 0, 0), representation='wireframe')
 
 
+def vis_contours(data, contours=[0], opacity=0.5, axis_order='xyz', **kwargs):
+    if axis_order != 'xyz':
+        data = data.transpose(tuple(_dim[w] for w in axis_order))
+    if data.dtype not in (np.float32, np.float64):
+        data = data.astype(np.float32)
+    mlab.contour3d(data, contours=contours, opacity=opacity, **kwargs)
+
+
 def vis_colored_point_cloud(points, colors, **kwargs):
     if colors.shape[-1] != 4:
         raise ValueError('colors must be an (n, 4) array of rgba values')

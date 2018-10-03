@@ -187,8 +187,10 @@ class DenseVoxels(Voxels):
         super(DenseVoxels, self).__init__(dense_data.shape, translate, scale)
 
     def rle_data(self):
-        return np.array(tuple(
-            rle.dense_to_rle(self._dense_data.flatten())), dtype=np.uint8)
+        # return np.array(tuple(
+        #     rle.dense_to_rle(self._dense_data.flatten())), dtype=np.uint8)
+        # return rle.dense_to_rle_with_buffer(self._dense_data.flatten())
+        return rle.dense_to_rle2(self._dense_data.flatten())
 
     def dense_data(self, fix_coords=False):
         data = self._dense_data

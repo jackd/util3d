@@ -52,6 +52,35 @@ def dense_to_rle(dense_data):
             yield count
 
 
+def dense_to_rle2(dense_data):
+    """
+    Based on:
+    https://gist.github.com/nvictus/66627b580c13068589957d6ab0919e66
+    """
+    n = len(dense_data)
+    starts = np.r_[0, np.flatnonzero(dense_data[1:] != dense_data[:-1]) + 1]
+    lengths = np.diff(np.r_[starts, n])
+    values = dense_data[starts]
+    nl = len(lengths)
+    bad_length_indices = np.where(lengths > 255)
+    bad_lengths = lengths[bad_length_indices]
+    nl += np.sum(bad_lengths // 255)
+    out = np.empty((nl, 2), dtype=np.uint8)
+    i = 0
+    for (val, length) in zip(values, lengths):
+        if length > 255:
+            n = length // 255
+            out[i:i+n] = val, 255
+            length = length % 255
+            i += n
+        out[i] = val, length
+        i += 1
+    if i != nl:
+        print(i, nl)
+    assert(i == nl)
+    return out.flatten()
+
+
 def dense_to_rle_fp(dense_data, fp):
     ctr = 0
     state = dense_data[0]

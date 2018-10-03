@@ -66,5 +66,9 @@ class RleTest(unittest.TestCase):
         np.testing.assert_equal(
             gatherer(rle.reverse(rl)), dense[-1::-1][indices])
 
+    def test_dense_to_rle2(self):
+        rl2 = rle.dense_to_rle2(dense)
+        np.testing.assert_equal(rl, rl2)
+
 
 unittest.main()
