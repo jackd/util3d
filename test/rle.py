@@ -70,5 +70,11 @@ class RleTest(unittest.TestCase):
         rl2 = rle.dense_to_rle2(dense)
         np.testing.assert_equal(rl, rl2)
 
+    def test_zeros(self):
+        n = 1000
+        expected = np.zeros((n,), dtype=np.bool)
+        actual = rle.rle_to_dense(rle.zeros(n))
+        np.testing.assert_equal(actual, expected)
+
 
 unittest.main()

@@ -79,6 +79,8 @@ def vis_voxels(voxels, axis_order='xzy', scale=None, shift=None, **kwargs):
 def vis_sliced(data, axis_order='xzy', **kwargs):
     if axis_order != 'xyz':
         data = data.transpose(tuple(_dim[w] for w in axis_order))
+    if data.dtype not in (np.float32, np.float64):
+        data = data.astype(np.float32)
     mlab.volume_slice(data, **kwargs)
 
 

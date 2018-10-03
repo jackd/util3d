@@ -15,6 +15,11 @@ def rle_to_dense(rle_data, dtype=None):
     return np.repeat(values, counts)
 
 
+def zeros(length):
+    return np.array(
+        [0, 255] * (length // 255) + [0, length % 255], dtype=np.uint8)
+
+
 def rle_to_sparse(rle_data):
     indices = []
     it = iter(rle_data)
@@ -295,22 +300,26 @@ def sample_occupied_indices(rle_data, n_samples):
             yield rle_index - diff
 
 
-def value_length_pairs(rle_data):
+def split_rle_data(rle_data):
     """Get an iterable of (value, length) pairs."""
-    it = iter(rle_data)
-    try:
-        while True:
-            yield next(it), next(it)
-    except StopIteration:
-        pass
+    # it = iter(rle_data)
+    # try:
+    #     while True:
+    #         yield next(it), next(it)
+    # except StopIteration:
+    #     pass
+    values, counts = rle_data[::2], rle_data[1::2]
+    return values, counts
 
 
 def length(rle_data):
-    return sum(l for v, l in value_length_pairs(rle_data))
+    values, counts = split_rle_data(rle_data)
+    return np.sum(counts)
 
 
 def reduce_rle_sum(rle_data):
-    return sum(v*l for v, l in value_length_pairs(rle_data))
+    values, counts = split_rle_data(rle_data)
+    return np.sum(values*counts)
 
 
 if __name__ == '__main__':
