@@ -1,6 +1,7 @@
 from __future__ import division
 import numpy as np
 import rle
+import brle
 import os
 
 
@@ -127,6 +128,40 @@ class Voxels(object):
         raise NotImplementedError('Abstract method')
 
 
+def _indices_3d(indices1d, dims, fix_coords=False):
+    d2 = dims[2]
+    d1 = dims[1]*d2
+    i = indices1d // d1
+    kj = indices1d % d1
+    k = kj // d2
+    j = kj % d2
+    if fix_coords:
+        return i, j, k
+    else:
+        return i, k, j
+
+
+def _indices_1d(indices, dims, fix_coords):
+    if fix_coords:
+        i, j, k = indices
+    else:
+        i, k, j = indices
+    return np.ravel_multi_index((i, k, j), dims)
+
+
+def _maybe_fix_dense_coords(dense_data, fix_coords):
+    if fix_coords:
+        dense_data = np.transpose(dense_data, (0, 2, 1))
+    return dense_data
+
+
+def _maybe_fix_sparse_coords(i, j, k, fix_coords):
+    if fix_coords:
+        return i, j, k
+    else:
+        return i, k, j
+
+
 class RleVoxels(Voxels):
     def __init__(self, rle_data, dims, translate=(0, 0, 0), scale=1):
         self._rle_data = rle_data
@@ -140,23 +175,11 @@ class RleVoxels(Voxels):
         data = rle.rle_to_dense(rle_data, dtype=np.bool)
         assert(data.dtype == np.bool)
         data = data.reshape(self.dims)
-        if fix_coords:
-            data = np.transpose(data, (0, 2, 1))
-        return data
+        return _maybe_fix_dense_coords(data, fix_coords)
 
     def sparse_data(self, fix_coords=False):
         indices = rle.rle_to_sparse(self._rle_data)
-        dims = self.dims
-        d2 = dims[2]
-        d1 = dims[1]*d2
-        i = indices // d1
-        kj = indices % d1
-        k = kj // d2
-        j = kj % d2
-        if fix_coords:
-            return i, j, k
-        else:
-            return i, k, j
+        return _indices_3d(indices, self._dims, fix_coords)
 
     def gather(self, indices, fix_coords=False):
         if fix_coords:
@@ -193,17 +216,11 @@ class DenseVoxels(Voxels):
         return rle.dense_to_rle2(self._dense_data.flatten())
 
     def dense_data(self, fix_coords=False):
-        data = self._dense_data
-        if fix_coords:
-            data = np.transpose(data, (0, 2, 1))
-        return data
+        return _maybe_fix_dense_coords(self._dense_data, fix_coords)
 
     def sparse_data(self, fix_coords=False):
         i, k, j = np.where(self._dense_data)
-        if fix_coords:
-            return i, j, k
-        else:
-            return i, k, j
+        return _maybe_fix_sparse_coords(i, j, k, fix_coords)
 
     def gather(self, indices, fix_coords=False):
         if fix_coords:
@@ -236,30 +253,32 @@ class SparseVoxels(Voxels):
 
     def sparse_data(self, fix_coords=False):
         i, k, j = self._sparse_data
-        if fix_coords:
-            return i, j, k
-        else:
-            return i, k, j
+        return _maybe_fix_sparse_coords(i, j, k, fix_coords)
 
     def gather(self, indices, fix_coords=False):
-        if fix_coords:
-            i, j, k = indices
-        else:
-            i, k, j = indices
-        dims = self.dims
-        indices_1d = np.ravel_multi_index((i, k, j), dims)
-        sparse_1d = set(np.ravel_multi_index(self._sparse_data, dims))
+        indices_1d = _indices_1d(indices, self._dims, fix_coords)
+        sparse_1d = set(np.ravel_multi_index(self._sparse_data, self._dims))
         return np.array([i1d in sparse_1d for i1d in indices_1d], np.bool)
 
 
-if __name__ == '__main__':
-    dims = (32,) * 3
-    dense_data = np.random.randn(*dims) > 0
-    dense = DenseVoxels(dense_data)
-    rl = dense.to_rle()
-    sparse = dense.to_sparse()
-    ds_data = dense.sparse_data()
-    print(np.all(dense_data == sparse.dense_data()))
-    print(np.all(dense_data == rl.dense_data()))
-    for expected, actual in zip(sparse.sparse_data(), ds_data):
-        print(np.all(expected == actual))
+class BrleVoxels(Voxels):
+    def _init__(self, brle_data, dims, translate=(0, 0, 0), scale=1):
+        self._brle_data = brle_data
+        super(BrleVoxels, self).__init__(dims, translate, scale)
+
+    def brle_data(self):
+        return self._brle_data
+
+    def rle_data(self):
+        return brle.brle_to_rle(self._brle_data)
+
+    def dense_data(self):
+        return brle.brle_to_dense(self._brle_data)
+
+    def sparse_data(self, fix_coords=False):
+        indices = brle.brle_to_sparse(self._brle_data)
+        return _indices_3d(indices, self._dims, fix_coords)
+
+    def gather(self, indices, fix_coords=False):
+        indices_1d = _indices_1d(indices, self._dims, fix_coords)
+        return brle.gather_1d(indices_1d)
