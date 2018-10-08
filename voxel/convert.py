@@ -123,13 +123,14 @@ def point_cloud_to_voxel_indices(
 def obj_to_binvox(
         obj_path, binvox_path, voxel_dim=32,
         bounding_box=(-0.5, -0.5, -0.5, 0.5, 0.5, 0.5),
-        pb=True, exact=True, dc=True, aw=True, c=False, v=False):
+        pb=True, exact=True, dc=True, aw=True, c=False, v=False,
+        overwrite_original=False):
     import subprocess
     _FNULL = open(os.devnull, 'w')
     if not os.path.isfile(obj_path):
         raise IOError('No obj file at %s' % obj_path)
     original_bv_path = obj_path[:-4] + '.binvox'
-    if os.path.isfile(original_bv_path):
+    if not overwrite_original and os.path.isfile(original_bv_path):
         raise IOError('File already exists at %s' % original_bv_path)
     args = [_bv_path, '-d', str(voxel_dim), '-bb']
     args.extend([str(b) for b in bounding_box])
