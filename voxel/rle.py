@@ -365,3 +365,11 @@ if __name__ == '__main__':
     print(np.sum(dense))
     print(dense)
     print(np.array(tuple(sample_occupied_indices(rle_data, 5))))
+
+
+def pad_to_length(rle_data, length):
+    rest = length - len(rle_data)
+    if rest < 0:
+        raise ValueError('rle_data already longer than length')
+    else:
+        return np.concatenate((rle_data, np.zeros((rest,), dtype=np.uint8)))

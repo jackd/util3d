@@ -54,8 +54,10 @@ def ones(length):
 
 def _empty_padded(n):
     if n % 2 == 0:
+        # return np.zeros((n,), dtype=np.uint8)
         return np.empty((n,), dtype=np.uint8)
     else:
+        # x = np.zeros((n+1,), dtype=np.uint8)
         x = np.empty((n+1,), dtype=np.uint8)
         x[-1] = 0
         return x
@@ -97,23 +99,31 @@ def rle_to_brle(rle_data):
     from .rle import split_rle_data
     values, counts = split_rle_data(rle_data)
     repeated = values[1:] == values[:-1]
-    out_length = len(values) + np.count_nonzero(repeated)*2
+    out_length = len(values) + np.count_nonzero(repeated)
     v0 = values[0]
     if v0 == 1:
-        out = _empty_padded(out_length+1)
+        out_length += 1
+        out = _empty_padded(out_length)
         out[0] = 0
         i = 1
     else:
         i = 0
         out = _empty_padded(out_length)
     out[i] = counts[0]
+    i += 1
     for count, rep in zip(counts[1:], repeated):
         if rep:
-            out[i:i+2] = 0, count
+            out[i:i+2] = (0, count)
             i += 2
         else:
             out[i] = count
             i += 1
+    assert(i == out_length)
+    # start = 0
+    # end = 10
+    # print(rle_data[start:end])
+    # print(out[start:end])
+    # exit()
     return out
 
 
@@ -189,3 +199,8 @@ def gatherer_1d(indices):
 
 def gather_1d(rle_data, indices):
     return gatherer_1d(indices)(rle_data)
+
+
+def sparse_to_brle(indices, length):
+    from . import rle
+    return rle_to_brle(rle.rle_to_sparse(indices, length))

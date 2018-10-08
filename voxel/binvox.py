@@ -1,8 +1,11 @@
+from __future__ import absolute_import
 from __future__ import division
-import numpy as np
-import rle
-import brle
+from __future__ import print_function
+
 import os
+import numpy as np
+from . import rle
+from . import brle
 
 
 def read_header(fp):
@@ -118,6 +121,9 @@ class Voxels(object):
     def rle_data(self):
         raise NotImplementedError('Abstract method')
 
+    def brle_data(self):
+        return brle.rle_to_brle(self.rle_data())
+
     def dense_data(self, fix_coords=False):
         raise NotImplementedError('Abstract method')
 
@@ -229,6 +235,9 @@ class DenseVoxels(Voxels):
             i, k, j = indices
         return self._dense_data[i, k, j]
 
+    def brle_data(self):
+        return brle.dense_to_brle(self.rle_data())
+
 
 class SparseVoxels(Voxels):
     def __init__(self, sparse_data, dims, translate=(0, 0, 0), scale=1):
@@ -260,9 +269,12 @@ class SparseVoxels(Voxels):
         sparse_1d = set(np.ravel_multi_index(self._sparse_data, self._dims))
         return np.array([i1d in sparse_1d for i1d in indices_1d], np.bool)
 
+    def brle_data(self):
+        return brle.sparse_to_brle(self.rle_data())
+
 
 class BrleVoxels(Voxels):
-    def _init__(self, brle_data, dims, translate=(0, 0, 0), scale=1):
+    def __init__(self, brle_data, dims, translate=(0, 0, 0), scale=1):
         self._brle_data = brle_data
         super(BrleVoxels, self).__init__(dims, translate, scale)
 
@@ -273,7 +285,7 @@ class BrleVoxels(Voxels):
         return brle.brle_to_rle(self._brle_data)
 
     def dense_data(self):
-        return brle.brle_to_dense(self._brle_data)
+        return np.reshape(brle.brle_to_dense(self._brle_data), self.dims)
 
     def sparse_data(self, fix_coords=False):
         indices = brle.brle_to_sparse(self._brle_data)
