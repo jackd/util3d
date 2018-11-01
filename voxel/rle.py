@@ -312,6 +312,10 @@ def split_rle_data(rle_data):
     return values, counts
 
 
+def merge_rle_data(values, counts):
+    return np.stack((values, counts), axis=-1).flatten()
+
+
 def length(rle_data):
     values, counts = split_rle_data(rle_data)
     return np.sum(counts)
@@ -322,54 +326,15 @@ def reduce_rle_sum(rle_data):
     return np.sum(values*counts)
 
 
-if __name__ == '__main__':
-    # rle_data = np.array(
-    #     [0, 5, 1, 3, 0, 255, 0, 2, 1, 255, 1, 3, 0, 2], dtype=np.uint8)
-    # indices = [0, 2, 5, 6, 10, 17]
-    # s = np.array(tuple(sorted_gather_1d(rle_data, indices)), dtype=np.bool)
-    # print(s)
-    # dense = rle_to_dense(rle_data)
-    # r2 = np.array(tuple(dense_to_rle(dense)), dtype=np.uint8)
-    # print(dense[indices])
-    #
-    # print('---')
-    # print(rle_data)
-    # print(r2)
-    #
-    # print('---')
-    # sparse = rle_to_sparse(rle_data)
-    # print(sparse)
-    # print(np.where(dense)[0])
-    # print('***')
-    # print(sparse)
-    # r3 = np.array(tuple(sparse_to_rle(sparse, len(dense))), dtype=np.int32)
-    # print(r2)
-    # print(r3)
-
-    # data = [0, 2, 1, 3, 0, 4, 1, 5, 0, 10]
-    # dim = 20
-    # vals, s, v, done = _get_contiguous_regions_1d(iter(data), dim)
-    # print(vals, s, v)
-    # dims = (4, 4, 4)
-    # rle_data = [0, 2, 1, 1, 0, 2, 1, 3, 0, 10, 1, 5]
-    # print(rle_data)
-    # r = tuple(get_contiguous_regions_2d(rle_data, 6))
-    # print(r)
-    # r = get_contiguous_regions(rle_data, dims)
-    # print(r)
-    # print(r[0][0])
-
-    rle_data = np.array([0, 5, 1, 3, 0, 2, 1, 4, 0, 2], dtype=np.uint8)
-    dense = rle_to_dense(rle_data)
-    print(reduce_rle_sum(rle_data))
-    print(np.sum(dense))
-    print(dense)
-    print(np.array(tuple(sample_occupied_indices(rle_data, 5))))
-
-
 def pad_to_length(rle_data, length):
     rest = length - len(rle_data)
     if rest < 0:
         raise ValueError('rle_data already longer than length')
     else:
         return np.concatenate((rle_data, np.zeros((rest,), dtype=np.uint8)))
+
+
+def remove_length_padding(rle_data):
+    data = np.reshape(rle_data, (-1, 2))
+    data = data[data[:, 1] > 0]
+    return data.flatten()

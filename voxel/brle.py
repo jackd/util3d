@@ -204,3 +204,14 @@ def gather_1d(rle_data, indices):
 def sparse_to_brle(indices, length):
     from . import rle
     return rle_to_brle(rle.rle_to_sparse(indices, length))
+
+
+def pad_to_length(brle_data, length):
+    from . import rle
+    return rle.pad_to_length(brle_data, length)
+
+
+def remove_length_padding(rle_data):
+    data = np.reshape(rle_data, (-1, 2))
+    data = data[data != [0, 0]]
+    return data.flatten()
