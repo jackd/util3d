@@ -243,52 +243,6 @@ def get_interpolated_roots_2d(data):
         yield get_interpolated_roots_1d(di)
 
 
-# def orthographic_filled_voxels(voxels):
-#     """
-#     Fill voxels by orthographic projection.
-#
-#     For each of the x, y and z axes, the min and max voxel depths are
-#     calculated for each "pixel" after "orthographic projection", creating a
-#     "tube". The returned volume is the intersection of all voxels inside each
-#     of these "tubes".
-#     """
-#     if len(voxels.shape) != 3:
-#         raise ValueError('voxels must be rank 3')
-#     if voxels.dtype != np.bool:
-#         raise ValueError('voxels must be bool')
-#
-#     voxels = np.pad(
-#         voxels,
-#         pad_width=((1, 1), (1, 1), (1, 1)),
-#         mode='constant',
-#         constant_values=0)
-#
-#     shape = voxels.shape
-#
-#     def tubed(x, axis):
-#         n = shape[axis]
-#         indices = range(n)
-#         indices = np.array(indices, dtype=np.int32)
-#         s0 = [1, 1, 1]
-#         s0[axis] = n
-#         indices = np.reshape(indices, s0)
-#         s0 = list(shape)
-#         s0[axis] = 1
-#         indices = np.tile(indices, s0)
-#         mins = np.min(
-#             np.where(x, indices, n*np.ones_like(indices)), axis=axis,
-#             keepdims=True)
-#         maxs = np.max(
-#             np.where(x, indices, -np.ones_like(indices)), axis=axis,
-#             keepdims=True)
-#         out = (indices >= mins) & (indices <= maxs)
-#         return out
-#
-#     voxels = tubed(voxels, 0) & tubed(voxels, 1) & tubed(voxels, 2)
-#     voxels = voxels[1:-1, 1:-1, 1:-1]
-#     return voxels
-
-
 class OrthographicTuber(object):
     def __init__(self, dims, axis):
         n = dims[axis]

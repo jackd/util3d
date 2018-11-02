@@ -23,7 +23,7 @@ def transform_transform(R, t, R1=None, t1=None):
     return R, t
 
 
-def inverse_coordinate_transform(R, t, x):
+def inverse_coordinate_transform(x, R, t):
     assert(len(R.shape) == 2)
     if len(x.shape) == 1:
         return np.matmul(R.T, x-t)
